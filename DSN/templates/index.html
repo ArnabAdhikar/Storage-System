@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>SAN vs Standalone Simulator</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+  <h1>Storage Performance Comparison</h1>
+
+  <form id="inputForm">
+    <h3>Input Metrics</h3>
+    <label>SAN IOPS: <input type="number" name="san_iops" required></label><br>
+    <label>Standalone IOPS: <input type="number" name="standalone_iops" required></label><br>
+    <label>SAN Latency (ms): <input type="number" step="0.01" name="san_latency" required></label><br>
+    <label>Standalone Latency (ms): <input type="number" step="0.01" name="standalone_latency" required></label><br>
+    <label>SAN Cost ($): <input type="number" step="0.01" name="san_cost" required></label><br>
+    <label>Standalone Cost ($): <input type="number" step="0.01" name="standalone_cost" required></label><br>
+    <button type="submit">Compare</button>
+  </form>
+
+  <canvas id="comparisonChart" width="500" height="300"></canvas>
+
+  <script>
+    const form = document.getElementById("inputForm");
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      const data = {};
+      formData.forEach((val, key) => data[key] = Number(val));
+
+      fetch('/compare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+        .then(res => res.json())
+        .then(data => {
+          const ctx = document.getElementById("comparisonChart").getContext("2d");
+          new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: ['IOPS', 'Latency', 'Cost'],
+              datasets: [{
+                label: 'SAN',
+                data: [data.IOPS[0], data.Latency[0], data.Cost[0]],
+                backgroundColor: 'rgba(54, 162, 235, 0.7)'
+              }, {
+                label: 'Standalone',
+                data: [data.IOPS[1], data.Latency[1], data.Cost[1]],
+                backgroundColor: 'rgba(255, 99, 132, 0.7)'
+              }]
+            },
+            options: {
+              responsive: true,
+              scales: { y: { beginAtZero: true } }
+            }
+          });
+        });
+    });
+  </script>
+</body>
+
+</html>
